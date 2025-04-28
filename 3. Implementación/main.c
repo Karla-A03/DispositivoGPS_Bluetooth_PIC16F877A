@@ -1,19 +1,18 @@
-// InclusiÛn de librerÌas est·ndar para el microcontrolador y funciones de cadena/entrada-salida
-#include <xc.h>         // LibrerÌa especÌfica para el compilador XC8 de Microchip
+// Inclusi√≥n de librer√≠as est√°ndar para el microcontrolador y funciones de cadena/entrada-salida
+#include <xc.h>         // Librer√≠a espec√≠fica para el compilador XC8 de Microchip
 #include <string.h>     // Para funciones de manejo de cadenas (strcpy, strstr, etc.)
-#include <stdio.h>      // Para funciones de entrada/salida est·ndar (no se usa directamente aquÌ)
 
-// ConfiguraciÛn de los bits de configuraciÛn del PIC16F877A
+// Configuraci√≥n de los bits de configuraci√≥n del PIC16F877A
 #pragma config FOSC = HS        // Selecciona el oscilador de alta velocidad (High Speed)
 #pragma config WDTE = OFF       // Desactiva el Watchdog Timer (temporizador de vigilancia)
 #pragma config PWRTE = ON       // Activa el Power-up Timer para estabilidad al iniciar
 #pragma config BOREN = ON       // Habilita el Brown-out Reset (reset por bajo voltaje)
-#pragma config LVP = OFF        // Desactiva la programaciÛn en bajo voltaje
-#pragma config CPD = OFF        // Desactiva la protecciÛn de la memoria EEPROM
-#pragma config WRT = OFF        // Desactiva la protecciÛn de escritura de la memoria flash
-#pragma config CP = OFF         // Desactiva la protecciÛn de cÛdigo de la memoria flash
+#pragma config LVP = OFF        // Desactiva la programaci√≥n en bajo voltaje
+#pragma config CPD = OFF        // Desactiva la protecci√≥n de la memoria EEPROM
+#pragma config WRT = OFF        // Desactiva la protecci√≥n de escritura de la memoria flash
+#pragma config CP = OFF         // Desactiva la protecci√≥n de c√≥digo de la memoria flash
 
-// DefiniciÛn de la frecuencia del cristal oscilador (20MHz)
+// Definici√≥n de la frecuencia del cristal oscilador (20MHz)
 #define _XTAL_FREQ 20000000     // Necesario para las funciones de delay
 
 // Definiciones para el control de LEDs
@@ -27,18 +26,18 @@ char gps_buffer[82];            // Buffer circular para almacenar datos NMEA rec
 char latitude[15];              // Almacena la latitud en formato de cadena
 char longitude[15];             // Almacena la longitud en formato de cadena
 char ns_indicator, ew_indicator; // Indicadores Norte/Sur y Este/Oeste
-unsigned char buffer_index = 0;  // Õndice actual para escribir en gps_buffer
+unsigned char buffer_index = 0;  // √çndice actual para escribir en gps_buffer
 unsigned char gps_data_ready = 0; // Bandera que indica que hay una trama NMEA completa
 
 // Prototipos de funciones
-void UART_Init(void);           // Inicializa el mÛdulo UART
-void UART_WriteChar(char data); // Escribe un car·cter por UART
+void UART_Init(void);           // Inicializa el m√≥dulo UART
+void UART_WriteChar(char data); // Escribe un car√°cter por UART
 void UART_WriteString(const char *str); // Escribe una cadena por UART
 void Process_GPS_Data(void);    // Procesa los datos GPS recibidos
 
-// FunciÛn principal
+// Funci√≥n principal
 void main(void) {
-    // ConfiguraciÛn de pines de LEDs como salidas
+    // Configuraci√≥n de pines de LEDs como salidas
     TRISD0 = 0;  // Configura RD0 (LED verde) como salida
     TRISD1 = 0;  // Configura RD1 (LED rojo) como salida
     
@@ -46,12 +45,12 @@ void main(void) {
     LED_GREEN = LED_OFF;
     LED_RED = LED_OFF;
     
-    // Inicializa el mÛdulo UART para comunicaciÛn serial
+    // Inicializa el m√≥dulo UART para comunicaci√≥n serial
     UART_Init();
     
     // Envia mensajes iniciales por UART
-    UART_WriteString("\r\nGPS Coordinate Reader\r\n");      // TÌtulo del sistema
-    UART_WriteString("PIC16F877A with NEO-6M GPS\r\n");    // DescripciÛn del hardware
+    UART_WriteString("\r\nGPS Coordinate Reader\r\n");      // T√≠tulo del sistema
+    UART_WriteString("PIC16F877A with NEO-6M GPS\r\n");    // Descripci√≥n del hardware
     UART_WriteString("Waiting for GPS data...\r\n\r\n");    // Mensaje de espera
     
     // Bucle principal infinito
@@ -60,7 +59,7 @@ void main(void) {
         if (gps_data_ready) {
             Process_GPS_Data();     // Procesa los datos GPS
             gps_data_ready = 0;     // Resetea la bandera
-            buffer_index = 0;       // Reinicia el Ìndice del buffer
+            buffer_index = 0;       // Reinicia el √≠ndice del buffer
             memset(gps_buffer, 0, sizeof(gps_buffer)); // Limpia el buffer
         }
         
@@ -68,44 +67,44 @@ void main(void) {
         static unsigned int heartbeat_counter = 0;
         if (++heartbeat_counter >= 2000) {  // Cada 2000 iteraciones (~2 segundos)
             LED_GREEN = !LED_GREEN;         // Cambia estado del LED verde
-            __delay_ms(20);                 // PequeÒo retardo para el parpadeo
+            __delay_ms(20);                 // Peque√±o retardo para el parpadeo
             LED_GREEN = !LED_GREEN;         // Vuelve al estado original
             heartbeat_counter = 0;          // Reinicia el contador
         }
     
-        // PequeÒo retardo para controlar la velocidad del bucle
+        // Peque√±o retardo para controlar la velocidad del bucle
         __delay_ms(1);
     }
 }
 
-// FunciÛn para inicializar el mÛdulo UART
+// Funci√≥n para inicializar el m√≥dulo UART
 void UART_Init() {
     TRISC7 = 1;             // Configura RC7 (RX) como entrada
     TRISC6 = 0;             // Configura RC6 (TX) como salida
     
-    // ConfiguraciÛn del baud rate (9600 bps a 20MHz)
+    // Configuraci√≥n del baud rate (9600 bps a 20MHz)
     SPBRG = 129;            // Valor del registro para 9600 baudios
     BRGH = 1;               // Usa alta velocidad de baudios
     
-    // ConfiguraciÛn del modo de operaciÛn
-    SYNC = 0;               // Modo asÌncrono
+    // Configuraci√≥n del modo de operaci√≥n
+    SYNC = 0;               // Modo as√≠ncrono
     SPEN = 1;               // Habilita el puerto serial
-    CREN = 1;               // Habilita la recepciÛn continua
+    CREN = 1;               // Habilita la recepci√≥n continua
     
-    // ConfiguraciÛn de formato de datos
-    TX9 = 0;                // TransmisiÛn de 8 bits
-    RX9 = 0;                // RecepciÛn de 8 bits
+    // Configuraci√≥n de formato de datos
+    TX9 = 0;                // Transmisi√≥n de 8 bits
+    RX9 = 0;                // Recepci√≥n de 8 bits
     
-    TXEN = 1;               // Habilita la transmisiÛn
+    TXEN = 1;               // Habilita la transmisi√≥n
     
-    // ConfiguraciÛn de interrupciones
-    RCIE = 1;               // Habilita interrupciÛn por recepciÛn
-    PEIE = 1;               // Habilita interrupciones perifÈricas
+    // Configuraci√≥n de interrupciones
+    RCIE = 1;               // Habilita interrupci√≥n por recepci√≥n
+    PEIE = 1;               // Habilita interrupciones perif√©ricas
     GIE = 1;                // Habilita interrupciones globales
     
-    // VerificaciÛn de la inicializaciÛn
+    // Verificaci√≥n de la inicializaci√≥n
     if (SPEN && CREN) {
-        LED_GREEN = LED_ON;  // Breve parpadeo del LED verde para indicar Èxito
+        LED_GREEN = LED_ON;  // Breve parpadeo del LED verde para indicar √©xito
         __delay_ms(100);
         LED_GREEN = LED_OFF;
     } else {
@@ -114,43 +113,43 @@ void UART_Init() {
     }
 }
 
-// FunciÛn para escribir un car·cter por UART
+// Funci√≥n para escribir un car√°cter por UART
 void UART_WriteChar(char data) {
-    while(!TXIF);           // Espera hasta que el buffer de transmisiÛn estÈ libre
-    TXREG = data;           // Escribe el car·cter en el registro de transmisiÛn
+    while(!TXIF);           // Espera hasta que el buffer de transmisi√≥n est√© libre
+    TXREG = data;           // Escribe el car√°cter en el registro de transmisi√≥n
 }
 
-// FunciÛn para escribir una cadena por UART
+// Funci√≥n para escribir una cadena por UART
 void UART_WriteString(const char *str) {
-    while (*str) {          // Mientras no sea el car·cter nulo
-        UART_WriteChar(*str++); // Escribe cada car·cter de la cadena
+    while (*str) {          // Mientras no sea el car√°cter nulo
+        UART_WriteChar(*str++); // Escribe cada car√°cter de la cadena
     }
 }
 
-// Rutina de servicio de interrupciÛn (ISR)
+// Rutina de servicio de interrupci√≥n (ISR)
 void __interrupt() ISR(void) {
-    if (RCIF) {             // Si hay una interrupciÛn por recepciÛn UART
-        char received = RCREG; // Lee el car·cter recibido
+    if (RCIF) {             // Si hay una interrupci√≥n por recepci√≥n UART
+        char received = RCREG; // Lee el car√°cter recibido
         
         // Verifica que no haya desbordamiento del buffer
         if (buffer_index < sizeof(gps_buffer) - 1) {
-            gps_buffer[buffer_index++] = received; // Almacena el car·cter
+            gps_buffer[buffer_index++] = received; // Almacena el car√°cter
             
-            // Detecta fin de trama NMEA (car·cter de nueva lÌnea)
+            // Detecta fin de trama NMEA (car√°cter de nueva l√≠nea)
             if (received == '\n') {
                 gps_data_ready = 1; // Activa bandera de datos listos
             }
         }
         
-        RCIF = 0;           // Limpia la bandera de interrupciÛn
+        RCIF = 0;           // Limpia la bandera de interrupci√≥n
     }
 }
 
-// FunciÛn para procesar los datos GPS recibidos
+// Funci√≥n para procesar los datos GPS recibidos
 void Process_GPS_Data() {
-    // Busca la trama GPGGA (datos de posiciÛn global)
+    // Busca la trama GPGGA (datos de posici√≥n global)
     if (strstr(gps_buffer, "$GPGGA")) {
-        LED_GREEN = LED_ON;  // Enciende LED verde (datos v·lidos)
+        LED_GREEN = LED_ON;  // Enciende LED verde (datos v√°lidos)
         LED_RED = LED_OFF;   // Apaga LED rojo
         
         char *token;         // Puntero para tokens
@@ -189,13 +188,13 @@ void Process_GPS_Data() {
         // Muestra las coordenadas formateadas por UART
         UART_WriteString("GPS Coordinates:\r\n");
         
-        // Formatea y muestra la latitud (ej: "41∞ 24.8963' N")
+        // Formatea y muestra la latitud (ej: "41¬∞ 24.8963' N")
         if (strlen(latitude) >= 4) {
             UART_WriteString("Latitude: ");
             // Grados (primeros dos caracteres)
             UART_WriteChar(latitude[0]);
             UART_WriteChar(latitude[1]);
-            UART_WriteString("∞ ");
+            UART_WriteString("¬∞ ");
             // Minutos (siguientes dos caracteres)
             UART_WriteChar(latitude[2]);
             UART_WriteChar(latitude[3]);
@@ -208,14 +207,14 @@ void Process_GPS_Data() {
             UART_WriteString("\r\n");
         }
         
-        // Formatea y muestra la longitud (ej: "081∞ 51.6838' W")
+        // Formatea y muestra la longitud (ej: "081¬∞ 51.6838' W")
         if (strlen(longitude) >= 5) {
             UART_WriteString("Longitude: ");
             // Grados (primeros tres caracteres)
             UART_WriteChar(longitude[0]);
             UART_WriteChar(longitude[1]);
             UART_WriteChar(longitude[2]);
-            UART_WriteString("∞ ");
+            UART_WriteString("¬∞ ");
             // Minutos (siguientes dos caracteres)
             UART_WriteChar(longitude[3]);
             UART_WriteChar(longitude[4]);
